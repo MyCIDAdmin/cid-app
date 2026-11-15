@@ -139,8 +139,11 @@ function Harness({ offres }: { offres: OffreAdhesion[] }) {
       rabaisId={rabaisId}
       familie={familie}
       hatAnmeldung={false}
+      datenBestaetigt={false}
+      datenSchonBestaetigt
       wirdGesendet={false}
       fehler={null}
+      onDatenBestaetigt={() => {}}
       onWaehlen={(id, r = null) => {
         aufrufe.waehlen(id, r);
         setAuswahl(id);

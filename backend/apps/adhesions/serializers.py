@@ -290,6 +290,7 @@ class SouscriptionSerializer(serializers.ModelSerializer):
             "offre",
             "campagne",
             "date_souscription",
+            "daten_bestaetigt_am",
             "prix_paye",
             "rabais",
             "statut",
@@ -314,6 +315,9 @@ class SouscrireSerializer(serializers.Serializer):
     rabais = serializers.PrimaryKeyRelatedField(
         queryset=RabaisOffre.objects.all(), required=False, allow_null=True
     )
+    # Das Mitglied bestätigt bei der ersten Anmeldung in einer Kampagne, dass seine persönlichen
+    # Daten stimmen (Pflicht, siehe SouscriptionViewSet.souscrire).
+    daten_bestaetigt = serializers.BooleanField(required=False, default=False)
     # Familienpaket : alle weiteren Personen kommen mit der Anmeldung (danach erst die Zahlung).
     erwachsene = serializers.ListField(
         child=serializers.DictField(), required=False, default=list, max_length=20

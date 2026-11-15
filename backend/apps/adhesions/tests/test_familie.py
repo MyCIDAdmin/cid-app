@@ -100,7 +100,13 @@ def _kind(jahr=None, **kw):
 def _buchen(user, offre, erwachsene=(), kinder=(), **extra):
     return _client(user).post(
         reverse(SOUSCRIRE),
-        {"offre": str(offre.id), "erwachsene": list(erwachsene), "kinder": list(kinder), **extra},
+        {
+            "offre": str(offre.id),
+            "erwachsene": list(erwachsene),
+            "kinder": list(kinder),
+            "daten_bestaetigt": True,
+            **extra,
+        },
         format="json",
     )
 
