@@ -33,12 +33,12 @@ export default function HelferGesucht({ aktiv = true }: { aktiv?: boolean }) {
     >
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
+          <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-bold sm:text-lg">
             <span className="helfer-hand text-2xl" aria-hidden>
               🙋
             </span>
             {t("stellen.titre")}
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
+            <span className="whitespace-nowrap rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
               {t("stellen.anzahl", { count: offene.length })}
             </span>
           </h2>
@@ -46,7 +46,7 @@ export default function HelferGesucht({ aktiv = true }: { aktiv?: boolean }) {
         </div>
         <Link
           to="/projets?tab=hilfe"
-          className="rounded-cid bg-white px-3 py-1.5 text-sm font-semibold text-ca-text shadow-sm transition hover:bg-white/90"
+          className="rounded-cid bg-white px-3 py-1.5 text-sm font-semibold text-ca shadow-sm transition hover:bg-white/90"
         >
           {t("stellen.alle")}
         </Link>
