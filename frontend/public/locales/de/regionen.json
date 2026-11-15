@@ -321,5 +321,9 @@
       "fan_zu_mitglied": "Fans, die Mitglied wurden",
       "punkte": "Wettbewerbspunkte"
     }
-  }
+  },
+  "v_spiel": "Treffen zu einem Spiel (optional)",
+  "v_spiel_keines": "– kein bestimmtes Spiel –",
+  "v_spiel_hinweis": "Datum und Uhrzeit kommen aus dem Spielplan. Wird das Spiel verlegt, passt sich das Treffen an und alle Angemeldeten werden informiert. Bei einer Spielabsage entscheidet ihr selbst.",
+  "v_spiel_badge": "Zum Spiel {{spiel}}"
 }

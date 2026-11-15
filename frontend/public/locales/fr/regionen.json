@@ -321,5 +321,9 @@
       "fan_zu_mitglied": "Fans devenus membres",
       "punkte": "Points du concours"
     }
-  }
+  },
+  "v_spiel": "Réunion liée à un match (facultatif)",
+  "v_spiel_keines": "– aucun match en particulier –",
+  "v_spiel_hinweis": "La date et l'heure viennent du calendrier. Si le match est reporté, la réunion suit et toutes les personnes inscrites sont informées. En cas d'annulation du match, vous décidez vous-mêmes.",
+  "v_spiel_badge": "Pour le match {{spiel}}"
 }

@@ -17,6 +17,10 @@ export function useRegion(slug: string | undefined) {
   });
 }
 
+export function useSpiele() {
+  return useQuery({ queryKey: [...KEY, "spiele"], queryFn: api.getSpiele, staleTime: 60_000 });
+}
+
 export function usePersonenSuche(q: string) {
   return useQuery({
     queryKey: [...KEY, "personen", q],

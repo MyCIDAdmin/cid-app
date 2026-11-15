@@ -155,6 +155,8 @@ export interface Veranstaltung {
   bild_url: string | null;
   max_teilnehmer: number | null;
   ticket_aktiv: boolean;
+  /** Verknüpftes Spiel aus dem Spielplan (Datum und Uhrzeit folgen ihm), sonst null. */
+  spiel?: SpielAuswahl | null;
   status: VeranstaltungStatus;
   ablehngrund: string;
   ersteller_name: string;
@@ -173,7 +175,18 @@ export interface Veranstaltung {
   anwesende_zahl?: number;
 }
 
+/** Spiel des Spielplans für die Auswahl „Treffen zu einem Spiel“. `anstoss` = ISO in Ortszeit. */
+export interface SpielAuswahl {
+  id: string;
+  titel: string;
+  wettbewerb: string;
+  anstoss: string;
+  statut: string;
+}
+
 export interface VeranstaltungEingabe {
+  /** Spiel-ID verknüpfen, null = Verknüpfung lösen, weglassen = unverändert. */
+  spiel?: string | null;
   titel: string;
   datum: string;
   ort: string;

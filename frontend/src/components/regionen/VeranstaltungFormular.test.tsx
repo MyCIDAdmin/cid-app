@@ -6,6 +6,7 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import VeranstaltungFormular from "./VeranstaltungFormular";
 
 vi.mock("../../hooks/useRegionen", () => ({
+  useSpiele: vi.fn(),
   useVeranstaltungAnlegen: vi.fn(),
   useVeranstaltungAendern: vi.fn(),
   useVeranstaltungBild: vi.fn(),
@@ -18,6 +19,7 @@ const standortAnlegen = vi.fn();
 describe("VeranstaltungFormular", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(hooks.useSpiele).mockReturnValue({ data: [] } as never);
     const mut = (fn: ReturnType<typeof vi.fn>) => ({ mutate: fn, isPending: false }) as never;
     vi.mocked(hooks.useVeranstaltungAnlegen).mockReturnValue(mut(anlegen));
     vi.mocked(hooks.useVeranstaltungAendern).mockReturnValue(mut(vi.fn()));
@@ -74,5 +76,32 @@ describe("VeranstaltungFormular", () => {
     const optionen = standortAnlegen.mock.calls[0][1] as { onSuccess: (s: { id: string }) => void };
     act(() => optionen.onSuccess({ id: "neu1" }));
     expect(screen.queryByLabelText("standort_neu_name")).toBeNull();
+  });
+  it("übernimmt Datum, Uhrzeit und Titel aus dem gewählten Spiel und sperrt die Felder", () => {
+    vi.mocked(hooks.useSpiele).mockReturnValue({
+      data: [
+        {
+          id: "sp1",
+          titel: "Club Africain – Esperance",
+          wettbewerb: "Ligue 1",
+          anstoss: "2026-12-05T20:30:00+01:00",
+          statut: "SCHEDULED",
+        },
+      ],
+    } as never);
+    renderWithProviders(<VeranstaltungFormular slug="nord" standorte={[]} onFertig={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("v_spiel"), { target: { value: "sp1" } });
+    expect(screen.getByLabelText("v_datum")).toHaveValue("2026-12-05");
+    expect(screen.getByLabelText("v_datum")).toBeDisabled();
+    expect(screen.getByLabelText("v_uhrzeit")).toHaveValue("20:30");
+    expect(screen.getByLabelText("v_titel")).toHaveValue("Club Africain – Esperance");
+    fireEvent.change(screen.getByLabelText("v_ort"), { target: { value: "Bremen, Pub" } });
+    fireEvent.click(screen.getByText("v_entwurf_speichern"));
+    expect(anlegen).toHaveBeenCalledWith(
+      expect.objectContaining({
+        daten: expect.objectContaining({ spiel: "sp1", datum: "2026-12-05", uhrzeit: "20:30" }),
+      }),
+      expect.any(Object),
+    );
   });
 });

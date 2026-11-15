@@ -21,6 +21,7 @@ import type {
   Standort,
   SaisonEingabe,
   Teilnehmer,
+  SpielAuswahl,
   Veranstaltung,
   VeranstaltungAktion,
   VeranstaltungEingabe,
@@ -297,6 +298,12 @@ export async function getVeranstaltungen(slug: string): Promise<Veranstaltung[]>
   const { data } = await apiClient.get<{ ergebnisse: Veranstaltung[] }>(
     `/regionen/${slug}/veranstaltungen/`,
   );
+  return data.ergebnisse;
+}
+
+/** Kommende Spiele des Spielplans (Auswahl für ein Treffen zu einem Spiel). */
+export async function getSpiele(): Promise<SpielAuswahl[]> {
+  const { data } = await apiClient.get<{ ergebnisse: SpielAuswahl[] }>("/regionen/spiele/");
   return data.ergebnisse;
 }
 

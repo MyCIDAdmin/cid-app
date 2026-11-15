@@ -2,12 +2,14 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  useSpiele,
   useVeranstaltungAendern,
   useVeranstaltungAnlegen,
   useStandortFuerRegionAnlegen,
   useVeranstaltungBild,
 } from "../../hooks/useRegionen";
-import type { Standort, Veranstaltung } from "../../types/regionen";
+import type { SpielAuswahl, Standort, Veranstaltung } from "../../types/regionen";
+import { lokaleSprache } from "../../utils/datum";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { klartext } from "../../utils/formattext";
 import RichTextEditor from "../ui/RichTextEditor";
@@ -28,9 +30,11 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
   const aendern = useVeranstaltungAendern();
   const bildHoch = useVeranstaltungBild();
   const standortAnlegen = useStandortFuerRegionAnlegen();
+  const spiele = useSpiele();
   const [neuerStandort, setNeuerStandort] = useState("");
   const [neuOffen, setNeuOffen] = useState(false);
 
+  const [spielId, setSpielId] = useState(bestehend?.spiel?.id ?? "");
   const [titel, setTitel] = useState(bestehend?.titel ?? "");
   const [datum, setDatum] = useState(bestehend?.datum ?? "");
   const [uhrzeit, setUhrzeit] = useState(bestehend?.uhrzeit ?? "");
@@ -47,6 +51,34 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
 
   const laeuft = anlegen.isPending || aendern.isPending || bildHoch.isPending;
   const gueltig = titel.trim() && datum && ort.trim();
+
+  // Auswahlliste: kommende Spiele ; das bereits verknüpfte Spiel bleibt auch dann wählbar, wenn es
+  // inzwischen nicht mehr in der Liste der kommenden Spiele steht.
+  const spielListe: SpielAuswahl[] = [...(spiele.data ?? [])];
+  if (bestehend?.spiel && !spielListe.some((s) => s.id === bestehend.spiel?.id)) {
+    spielListe.unshift(bestehend.spiel);
+  }
+
+  function spielText(s: SpielAuswahl): string {
+    const wann = new Date(s.anstoss).toLocaleString(lokaleSprache(), {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${wann} · ${s.titel}${s.wettbewerb ? ` (${s.wettbewerb})` : ""}`;
+  }
+
+  function spielWaehlen(id: string) {
+    setSpielId(id);
+    const spiel = spielListe.find((s) => s.id === id);
+    if (!spiel) return;
+    // Die Ortszeit steckt schon im ISO-Text (JJJJ-MM-TTTHH:MM:SS+01:00).
+    setDatum(spiel.anstoss.slice(0, 10));
+    setUhrzeit(spiel.anstoss.slice(11, 16));
+    if (!titel.trim()) setTitel(spiel.titel);
+  }
 
   function standortHinzufuegen() {
     const name = neuerStandort.trim();
@@ -79,6 +111,8 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
       max_teilnehmer: maximum ? Number(maximum) : null,
       ticket_aktiv: ticketAktiv,
       beschreibung: klartext(beschreibung) ? beschreibung.trim() : "",
+      // Nur senden, wenn sich die Verknüpfung geändert hat (leer = lösen).
+      ...(spielId !== (bestehend?.spiel?.id ?? "") ? { spiel: spielId || null } : {}),
     };
     const bei = (err: unknown) => setFehler(extractApiErrorMessage(err, t("fehler_speichern")));
     if (bestehend) {
@@ -105,6 +139,24 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
       onSubmit={senden}
       className="flex flex-col gap-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
     >
+      <div>
+        <label className="text-xs font-semibold text-text-tertiary">
+          {t("v_spiel")}
+          <select
+            className={`${FELD} mt-1 font-normal`}
+            value={spielId}
+            onChange={(e) => spielWaehlen(e.target.value)}
+          >
+            <option value="">{t("v_spiel_keines")}</option>
+            {spielListe.map((s) => (
+              <option key={s.id} value={s.id}>
+                {spielText(s)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="mt-1 text-[11px] text-text-tertiary">{t("v_spiel_hinweis")}</p>
+      </div>
       <label className="text-xs font-semibold text-text-tertiary">
         {t("v_titel")}
         <input
@@ -121,6 +173,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
             type="date"
             className={`${FELD} mt-1 font-normal`}
             value={datum}
+            disabled={Boolean(spielId)}
             onChange={(e) => setDatum(e.target.value)}
           />
         </label>
@@ -130,6 +183,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
             type="time"
             className={`${FELD} mt-1 font-normal`}
             value={uhrzeit}
+            disabled={Boolean(spielId)}
             onChange={(e) => setUhrzeit(e.target.value)}
           />
         </label>
